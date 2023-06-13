@@ -1,0 +1,152 @@
+---
+- name: Get current hostname
+  command: cat /etc/hostname
+  register: current_hostname
+
+- name: Set hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Set hostname in /etc/hosts file
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1\s+{{ current_hostname.stdout }}'
+    line: "127.0.1.1       {{ inventory_hostname }}"
+    backrefs: true
+
+- name: Add custom SSH Config file
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: '0600'
+  notify:
+    - restart sshd
+
+- name: Disable timers for unattended upgrade
+  raw: systemctl disable --now {{item}}
+  with_items:
+    - 'apt-daily.timer'
+    - 'apt-daily-upgrade.timer'
+  when:
+    - ansible_os_family == "Debian"
+
+- name: Reload systemctl daemon to apply the new changes
+  raw: systemctl daemon-reload
+  when:
+    - ansible_os_family == "Debian"
+
+- name: Wait for any possibly running unattended upgrade to finish
+  raw: >
+    systemd-run --property="After=apt-daily.service apt-daily-upgrade.service"
+    --wait /bin/true
+  when:
+    - ansible_os_family == "Debian"
+
+- name: Purge unattended upgrades
+  raw: apt-get -y purge unattended-upgrades
+  when:
+    - ansible_os_family == "Debian"
+
+- name: Update all packages to their latest version
+  apt:
+    name: "*"
+    state: latest
+    update_cache: true
+  when:
+    - ansible_os_family == "Debian"
+
+- name: Install required packages (Deb)
+  apt:
+    state: latest
+    name: "{{ packages }}"
+  when:
+    - ansible_os_family == "Debian"
+
+- name: Enable services
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  with_items:
+    - "{{ services }}"
+
+- name: Set timezone to Europe/Ljubljana
+  timezone:
+    name: "{{ timezone }}"
+
+- name: Add authorized users to sudo group
+  user:
+    name: "{{ item }}"
+    shell: /bin/bash
+    groups: sudo
+    append: true
+    state: present
+    createhome: true
+  with_items:
+    - "{{ users }}"
+
+- name: Allow passwordless sudo to all sudo users
+  replace:
+    path: /etc/sudoers
+    regexp: '^.*\%sudo\s+ALL=\(ALL:ALL\)\s+ALL'
+    replace: '%sudo   ALL=(ALL) NOPASSWD:ALL'
+
+- name: Add extra certs
+  copy:
+    src: "{{ role_path }}/files/cert/{{ item }}.crt"
+    dest: /usr/local/share/ca-certificates/
+  with_items:
+    - "{{ certs }}"
+
+- name: Update certs index
+  command: /usr/sbin/update-ca-certificates
+
+- name: Add keys for sudo users
+  authorized_key:
+    user: "{{ item }}"
+    state: present
+    key: "{{ lookup('file', 'ssh_keys/' + item + '.pub') }}"
+  with_items:
+    - "{{ users }}"
+
+- name: Remove the users
+  ansible.builtin.user:
+    name: "{{ item }}"
+    state: absent
+    remove: true
+  with_items:
+    - "{{ remove_users }}"
+
+- name: Add known hosts for 'admin' user
+  copy:
+    src: known_hosts
+    dest: /home/admin/.ssh/known_hosts
+    owner: admin
+    group: admin
+    mode: '0644'
+
+- name: Copy Chrony config file
+  template:
+    src: chrony.conf.j2
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - restart chrony
+
+- name: Set host banner
+  template:
+    src: banner.j2
+    dest: /etc/issue
+  notify:
+    - restart sshd
+
+- name: Enable UFW and OpenSSH
+  community.general.ufw:
+    state: enabled
+    rule: allow
+    name: OpenSSH
+...

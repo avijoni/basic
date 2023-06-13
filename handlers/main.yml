@@ -1,0 +1,11 @@
+---
+# handlers file for setup
+- name: restart sshd
+  service:
+    name: sshd
+    state: restarted
+
+- name: restart chrony
+  service:
+    name: chronyd
+    state: restarted

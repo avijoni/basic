@@ -1,0 +1,27 @@
+---
+users:
+  - ziga.zvan
+  - simon.posnjak
+  - lovro.pozarnik
+  - bernard.lakotic
+  - mitja.suncic
+  - gasper.juhant
+  - admin
+  - dusan.milovanovic
+remove_users:
+  - marko.djukic
+services:
+  - sshd
+packages:
+  - chrony
+  - lvm2
+  - telnet
+  - vim
+  - python3-pip
+timezone: Europe/Ljubljana
+certs:
+  - SectigoRSADomainValidationSecureServerCA
+  - SectigoRSAExtendedValidationSecureServerCA
+  - SectigoRSAOrganizationValidationSecureServerCA
+  - USERTrustRSA-AAACA-xSign
+...

@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  author: Mitja Suncic
+  description: software developer
+  company: Cetrta Pot d.o.o.
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+  galaxy_tags:
+    - base
