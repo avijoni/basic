@@ -1,15 +1,8 @@
 ---
 users:
-  - ziga.zvan
-  - simon.posnjak
-  - lovro.pozarnik
-  - bernard.lakotic
-  - mitja.suncic
-  - gasper.juhant
   - admin
-  - dusan.milovanovic
 remove_users:
-  - marko.djukic
+  - milojko
 services:
   - sshd
 packages:
