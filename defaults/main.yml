@@ -11,10 +11,10 @@ packages:
   - telnet
   - vim
   - python3-pip
+  - curl
+  - git
 timezone: Europe/Ljubljana
 certs:
-  - SectigoRSADomainValidationSecureServerCA
-  - SectigoRSAExtendedValidationSecureServerCA
-  - SectigoRSAOrganizationValidationSecureServerCA
-  - USERTrustRSA-AAACA-xSign
+  - customCA
+  - TrustCA
 ...
